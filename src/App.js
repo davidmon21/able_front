@@ -20,20 +20,20 @@ function useSemiPersistentState(key,initialState){
 
 function structureSetter(state,action){
   switch(action.type){
-    case 'init':
+    case 'STRUCTURE_FETCH_INIT':
       return {
         ...state,
         isLoading: true,
         isError: false,
       };
-    case 'success':
+    case 'STRUCTURE_FETCH_SUCCESS':
       return {
         ...state,
         isLoading: false,
         isError: false,
         data: action.payload,
       };
-    case 'STORIES_FETCH_FAILURE':
+    case 'STRUCTURE_FETCH_FAILURE':
       return {
         ...state,
         isLoading: false,
@@ -45,19 +45,28 @@ function structureSetter(state,action){
 
 }
 
-
-function ChapterMenu(props){
+function BookMenu({setChapter,setBook,structure}) {  
   return (
-      
-      <p>{props.book}</p>
-    
+    <div>
+    <select onChange={(e) => 
+      {
+        setBook(e.target.value);
+        setChapter('1')
+      }}>
+      {(Object.keys(structure.data)).map( (item) => (
+        <option value={item}> {structure.data[item]['name']} </option> 
+                    
+      ))}
+    </select>
+    </div>
   )
 }
 
-function BookMenu() {
-  const [version, setVersion] = useSemiPersistentState('version', 'DRC');
+function App() {
   const [book, setBook] = React.useState('Gen')
-  
+  const [chapter, setChapter] = React.useState('1')
+  const [version, setVersion] = useSemiPersistentState('version', 'DRC');
+
   const [url, setUrl] = React.useState(
     `${API_ENDPOINT}book_list?version=${version}`);
   
@@ -65,12 +74,12 @@ function BookMenu() {
   
   
   const handleFetchStructure = React.useCallback( async () => {
-    dispatchStructure({type: "init"})
+    dispatchStructure({type: "STRUCTURE_FETCH_INIT"})
     try {
       const result = await axios.get(url)
-      dispatchStructure({type: "success", payload: result.data})
+      dispatchStructure({type: "STRUCTURE_FETCH_SUCCESS", payload: result.data})
     } catch {
-      dispatchStructure({type: "failure"})
+      dispatchStructure({type: "STRUCTURE_FETCH_FAILURE"})
     }
   },[url])
 
@@ -78,29 +87,6 @@ function BookMenu() {
     handleFetchStructure();
   }, [handleFetchStructure]);
 
-  
-
-
-
-  return (
-    <div>
-      
-    <select onChange={(e) => setBook(structure.data[e.target.value]['name'])}>
-      {(Object.keys(structure.data)).map( (item) => (
-        <option value={item}> {structure.data[item]['name']} </option> 
-                    
-      ))}
-      
-    </select>
-        <p>{book}</p>
-    <ChapterMenu book={book} bookStructure={structure.data} />
-    
-    </div>
-  )
-}
-
-function App() {
-  
   return (
     <div className="App">
       <header className="App-header">
@@ -117,11 +103,9 @@ function App() {
           
         <div>
               <div>
-                <BookMenu/>
-                <p></p>
+                <BookMenu setChapter={setChapter} setBook={setBook} structure={structure}/>
+                <p>{book}</p>
               </div>
-              
-
         </div>
       
         </a>
