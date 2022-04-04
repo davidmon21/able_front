@@ -18,7 +18,7 @@ function useSemiPersistentState(key,initialState){
 
 }
 
-function structureSetter(state,action){
+function fetchReducer(state,action){
   switch(action.type){
     case 'STRUCTURE_FETCH_INIT':
       return {
@@ -45,22 +45,32 @@ function structureSetter(state,action){
 
 }
 
-function BookMenu({setChapter,setBook,structure}) {  
+function BookMenu({setBook,setChapter,book,structure}) {  
   return (
     <div>
-    <select onChange={(e) => 
-      {
-        setBook(e.target.value);
-        setChapter('1')
-      }}>
+    <select onChange={(e) => {
+      setBook(e.target.value)
+      setChapter(1)
+    }
+    }
+    >
       {(Object.keys(structure.data)).map( (item) => (
-        <option value={item}> {structure.data[item]['name']} </option> 
-                    
+        <option value={item}>{structure.data[item]['name']} </option> 
       ))}
     </select>
+    { structure.data[book] ? 
+    (<select onChange={(e) => setChapter(e.target.value)} >
+      {(Object.keys(structure.data[book]["chapters"])).map( (item) => (
+        <option value={item}>{item} </option> 
+      ))}
+    
+    </select>) : (<p>Loading</p>)
+    }
     </div>
   )
 }
+
+
 
 function App() {
   const [book, setBook] = React.useState('Gen')
@@ -68,15 +78,15 @@ function App() {
   const [version, setVersion] = useSemiPersistentState('version', 'DRC');
 
   const [url, setUrl] = React.useState(
-    `${API_ENDPOINT}book_list?version=${version}`);
+    `${API_ENDPOINT}`);
   
-  const [structure, dispatchStructure] = React.useReducer(structureSetter, { data: [], isLoading: false, isError: false })
+  const [structure, dispatchStructure] = React.useReducer(fetchReducer, { data: [], isLoading: false, isError: false })
   
   
   const handleFetchStructure = React.useCallback( async () => {
     dispatchStructure({type: "STRUCTURE_FETCH_INIT"})
     try {
-      const result = await axios.get(url)
+      const result = await axios.get(`${url}book_list?version=${version}`)
       dispatchStructure({type: "STRUCTURE_FETCH_SUCCESS", payload: result.data})
     } catch {
       dispatchStructure({type: "STRUCTURE_FETCH_FAILURE"})
@@ -90,25 +100,14 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          
         <div>
-              <div>
-                <BookMenu setChapter={setChapter} setBook={setBook} structure={structure}/>
-                <p>{book}</p>
-              </div>
+              { structure.isError && <p>Something went wrong..</p>}
+              { structure.isLoading ? (<p>Loading ...</p>) : (
+                <div>
+                <BookMenu setBook={setBook} setChapter={setChapter} book={book} structure={structure}  />
+                </div>
+              )}
         </div>
-      
-        </a>
       </header>
     </div>
   );
