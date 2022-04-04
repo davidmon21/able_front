@@ -70,6 +70,32 @@ function BookMenu({setBook,setChapter,book,structure}) {
   )
 }
 
+function GrabText({textUrl}) {
+  const [chaptert, dispatchText] = React.useReducer(fetchReducer, { data: [], isLoading: true, isError: false })
+
+  const handleFetchText = React.useCallback( async () => {
+    dispatchText({type: "STRUCTURE_FETCH_INIT"})
+    try {
+      const result = await axios.get(textUrl)
+      dispatchText({type: "STRUCTURE_FETCH_SUCCESS", payload: result.data})
+    } catch {
+      dispatchText({type: "STRUCTURE_FETCH_FAILURE"})
+    }
+  },[textUrl]);
+
+  React.useEffect(() => {
+    handleFetchText();
+  }, [handleFetchText]);
+
+  return (
+    <p>
+      {JSON.stringify(chaptert.data)}
+    </p>
+  );
+
+
+}
+
 
 
 function App() {
@@ -79,6 +105,8 @@ function App() {
 
   const [url, setUrl] = React.useState(
     `${API_ENDPOINT}`);
+  const [textUrl, setTextUrl] = React.useState(
+      `${API_ENDPOINT}/text?version=${version}&book=${book}&chapter=${chapter}`);
   
   const [structure, dispatchStructure] = React.useReducer(fetchReducer, { data: [], isLoading: false, isError: false })
   
@@ -97,6 +125,11 @@ function App() {
     handleFetchStructure();
   }, [handleFetchStructure]);
 
+  const handleFetchSubmit = (event) => {
+    setTextUrl(`${API_ENDPOINT}/text?version=${version}&book=${book}&chapter=${chapter}`);
+    event.preventDefault();
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -104,9 +137,13 @@ function App() {
               { structure.isError && <p>Something went wrong..</p>}
               { structure.isLoading ? (<p>Loading ...</p>) : (
                 <div>
+                <form onSubmit={handleFetchSubmit}>
                 <BookMenu setBook={setBook} setChapter={setChapter} book={book} structure={structure}  />
+                <button type="submit">Get</button>
+                </form>
                 </div>
               )}
+              <GrabText textUrl={textUrl}/>
         </div>
       </header>
     </div>
