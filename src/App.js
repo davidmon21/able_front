@@ -70,27 +70,33 @@ function BookMenu({setBook,setChapter,book,structure}) {
   )
 }
 
-function GrabText({textUrl}) {
+function GrabText({urlFields}) {
   const [chaptert, dispatchText] = React.useReducer(fetchReducer, { data: [], isLoading: true, isError: false })
 
   const handleFetchText = React.useCallback( async () => {
     dispatchText({type: "STRUCTURE_FETCH_INIT"})
     try {
-      const result = await axios.get(textUrl)
-      dispatchText({type: "STRUCTURE_FETCH_SUCCESS", payload: result.data})
+      const result = await axios.get(`${API_ENDPOINT}/text?version=${urlFields[0]}&book=${urlFields[1]}&chapter=${urlFields[2]}`)
+      dispatchText({type: "STRUCTURE_FETCH_SUCCESS", payload: result.data["text"][urlFields[1]][urlFields[2]]})
+      
     } catch {
       dispatchText({type: "STRUCTURE_FETCH_FAILURE"})
     }
-  },[textUrl]);
+  },[`${API_ENDPOINT}/text?version=${urlFields[0]}&book=${urlFields[1]}&chapter=${urlFields[2]}`]);
 
   React.useEffect(() => {
     handleFetchText();
+    
   }, [handleFetchText]);
-
+  
   return (
-    <p>
-      {JSON.stringify(chaptert.data)}
-    </p>
+    <article>
+      {Object.keys(chaptert.data).map((item) =>
+      
+        <p><sup>{item}</sup>{chaptert.data[item]}</p>
+      
+      )}
+    </article>
   );
 
 
@@ -105,8 +111,7 @@ function App() {
 
   const [url, setUrl] = React.useState(
     `${API_ENDPOINT}`);
-  const [textUrl, setTextUrl] = React.useState(
-      `${API_ENDPOINT}/text?version=${version}&book=${book}&chapter=${chapter}`);
+  const [urlFields, setUrlFields] = React.useState(["DRC","Gen","1"]);
   
   const [structure, dispatchStructure] = React.useReducer(fetchReducer, { data: [], isLoading: false, isError: false })
   
@@ -126,7 +131,7 @@ function App() {
   }, [handleFetchStructure]);
 
   const handleFetchSubmit = (event) => {
-    setTextUrl(`${API_ENDPOINT}/text?version=${version}&book=${book}&chapter=${chapter}`);
+    setUrlFields([version,book,chapter]);
     event.preventDefault();
   }
 
@@ -143,7 +148,7 @@ function App() {
                 </form>
                 </div>
               )}
-              <GrabText textUrl={textUrl}/>
+              <GrabText urlFields={urlFields}/>
         </div>
       </header>
     </div>
